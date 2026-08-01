@@ -2,9 +2,9 @@
 
 Modul `@mikulogin/nextjs` menyediakan integrasi siap pakai untuk Next.js App Router, mencakup:
 
-1. **Route Handlers** — `handleLogin`, `handleRegister`, `handleSession`
+1. **Route Handlers** — `handleLogin`, `handleRegister`, `handleSession`, `handleForgotPassword`, `handleResetPassword`
 2. **Auth Helper** — `auth()` untuk validasi sesi di Server Component & Middleware
-3. **Komponen UI React** — `<SignIn />` dan `<SignUp />` dengan desain modern Geist + Material Symbols
+3. **Komponen UI React** — `<SignIn />`, `<SignUp />`, `<ForgotPassword />`, `<ResetPassword />` dengan desain modern Geist + Material Symbols
 
 ---
 
@@ -31,10 +31,21 @@ Fungsi factory utama yang mengembalikan kumpulan handler dan helper.
 import { mikulogin, PrismaAdapter } from "mikulogin";
 import { PrismaClient } from "@prisma/client";
 
-const { handleLogin, handleRegister, handleSession, auth } = mikulogin({
+const {
+  handleLogin,
+  handleRegister,
+  handleSession,
+  handleForgotPassword,
+  handleResetPassword,
+  auth,
+} = mikulogin({
   adapter: PrismaAdapter(new PrismaClient()),
   secret: process.env.AUTH_SECRET!,
   sessionMaxAge: 86400, // opsional, default: 86400 detik (24 jam)
+  sendPasswordResetEmail: async (email, resetUrl) => {
+    // opsional, contoh: panggil Resend/Nodemailer
+    console.log(`Kirim email reset ke ${email}: ${resetUrl}`);
+  },
 });
 ```
 
@@ -45,6 +56,7 @@ const { handleLogin, handleRegister, handleSession, auth } = mikulogin({
 | `adapter` | `DatabaseAdapter` | Ya | Instance adapter database (misal `PrismaAdapter`) |
 | `secret` | `string` | Ya | Secret key untuk keamanan aplikasi |
 | `sessionMaxAge` | `number` | Tidak | Durasi sesi default dalam detik (default: `86400` = 24 jam) |
+| `sendPasswordResetEmail` | `(email: string, resetUrl: string) => Promise<void>` | Tidak | Callback async untuk pengiriman email reset kata sandi |
 
 ---
 
@@ -88,6 +100,34 @@ Memvalidasi sesi aktif dari cookie header.
 export const GET = (req: Request) => handleSession(req);
 ```
 
+### `handleForgotPassword(req: Request): Promise<Response>` ⭐ **Baru**
+
+Memproses permintaan reset kata sandi. Menerima JSON body `{ email, resetUrlBase }`.
+
+- **Sukses (200):** Return `{ message: "Jika email valid, tautan reset telah dikirim." }`. (Proteksi *Anti User Enumeration*: Mengembalikan pesan sukses generik bahkan jika email tidak terdaftar).
+- **Callback Email:** Memanggil `sendPasswordResetEmail(email, `${resetUrlBase}?token=${token}`)` jika dikonfigurasi.
+- **Param kosong (400):** `{ error: "Email dan resetUrlBase wajib diisi" }`.
+- **DB error (500):** `{ error: "Terjadi kesalahan server" }`.
+
+```typescript
+// app/api/auth/forgot-password/route.ts
+export const POST = (req: Request) => handleForgotPassword(req);
+```
+
+### `handleResetPassword(req: Request): Promise<Response>` ⭐ **Baru**
+
+Memproses pembaruan kata sandi menggunakan token reset. Menerima JSON body `{ token, newPassword }`.
+
+- **Sukses (200):** Return `{ message: "Kata sandi berhasil diperbarui" }`.
+- **Token expired/invalid (400):** `{ error: "Tautan reset tidak valid atau sudah kedaluwarsa" }`.
+- **Password pendek (400):** `{ error: "Token tidak valid atau kata sandi terlalu pendek" }`.
+- **DB error (500):** `{ error: "Terjadi kesalahan server" }`.
+
+```typescript
+// app/api/auth/reset-password/route.ts
+export const POST = (req: Request) => handleResetPassword(req);
+```
+
 ---
 
 ## Auth Helper: `auth(tokenOrCookieHeader?)`
@@ -103,117 +143,94 @@ const result = await auth(cookieHeader);
 // result = { user: { id, email, name, ... }, session } | null
 ```
 
-**Perilaku:**
-- Mengekstrak token `mikulogin_session` dari cookie header menggunakan regex presisi.
-- Memeriksa expiry sesi.
-- Mengembalikan `null` (bukan throw) jika tidak autentik, kedaluwarsa, atau error — aman untuk middleware.
-
 ---
 
 ## Komponen UI: `<SignIn />`
 
-Komponen React untuk halaman login dengan desain Geist + Material Symbols Outlined.
-
-**Fitur:**
-- **Pilihan Tema (`theme`)**: Mengdukung `light` mode dan `dark` (OLED Pitch-Black) mode.
-- **Spotlight Hover Effect**: Tombol submit dilengkapi dengan animasi pendaran cahaya (*glowing border beam & ambient aura*) yang melacak posisi kursor.
-- **Custom Animated Checkbox**: Checkbox berbentuk lingkaran dengan efek *spring pop animation* dan ikon centang dinamis.
-- **Sliding Gradient Underline**: Tautan teks ("Forgot password?", "Create Account") menggunakan animasi garis bawah meluncur dan efek pendaran cahaya teks (*text glow*).
-- Input email dan password dengan ikon Material Symbols
-- Toggle show/hide password (`visibility` / `visibility_off`)
-- Loading state (button & input di-disable)
-- Error state ditampilkan dengan alert merah
-- SSR-safe (`window.location` hanya diakses di client)
-- Race condition safe (double-submit dicegah via `disabled={loading}`)
-
-### Props
-
-| Prop | Tipe | Default | Deskripsi |
-| :--- | :--- | :--- | :--- |
-| `theme` | `"light" \| "dark"` | `"light"` | Pilihan tema UI (Light Mode atau Dark Mode) |
-| `loginApiUrl` | `string` | `"/api/auth/login"` | Endpoint API login |
-| `redirectTo` | `string` | `"/dashboard"` | Redirect setelah sukses |
-| `signUpUrl` | `string` | `"/register"` | URL halaman daftar |
-| `forgotPasswordUrl` | `string` | `"#"` | URL lupa kata sandi |
-| `title` | `string` | `"Welcome Back"` | Judul halaman |
-| `subtitle` | `string` | `"..."` | Sub-judul |
-| `protocolText` | `string` | `"Mikulogin Security Protocol V2.4"` | Teks footer branding |
-| `onSuccess` | `(data: any) => void` | - | Callback setelah sukses |
-
-```tsx
-<SignIn
-  loginApiUrl="/api/auth/login"
-  signUpUrl="/register"
-  redirectTo="/dashboard"
-  title="Selamat Datang"
-/>
-```
+Komponen React Client (`"use client"`) untuk halaman login dengan desain Geist + Material Symbols Outlined.
 
 ---
 
 ## Komponen UI: `<SignUp />`
 
-Komponen React untuk halaman registrasi dengan desain yang seragam dengan `<SignIn />`.
+Komponen React Client (`"use client"`) untuk halaman registrasi dengan desain yang seragam dengan `<SignIn />`.
+
+---
+
+## Komponen UI: `<ForgotPassword />` ⭐ **Baru**
+
+Komponen React Client (`"use client"`) untuk alur Lupa Kata Sandi.
 
 **Fitur:**
-- Input nama lengkap, email, dan password
-- Toggle show/hide password
-- Loading & error state
-- Success state + auto-redirect ke halaman login setelah 1.5 detik
+- Input alamat email dengan penanganan state `idle`, `loading`, `success`, `error`.
+- Mengirim payload `{ email, resetUrlBase }` ke endpoint `/api/auth/forgot-password`.
+- Penanganan I/O Failure: Aman dari crash jika API mengembalikan respons non-JSON / server error 500.
 
 ### Props
 
 | Prop | Tipe | Default | Deskripsi |
 | :--- | :--- | :--- | :--- |
-| `theme` | `"light" \| "dark"` | `"light"` | Pilihan tema UI (Light Mode atau Dark Mode) |
-| `registerApiUrl` | `string` | `"/api/auth/register"` | Endpoint API registrasi |
-| `signInUrl` | `string` | `"/login"` | URL halaman login |
-| `title` | `string` | `"Create Account"` | Judul halaman |
-| `subtitle` | `string` | `"..."` | Sub-judul |
-| `protocolText` | `string` | `"Mikulogin Security Protocol V2.4"` | Teks footer branding |
-| `onSuccess` | `(data: any) => void` | - | Callback setelah sukses |
+| `theme` | `"light" \| "dark"` | `"light"` | Pilihan tema UI |
+| `forgotPasswordApiUrl` | `string` | `"/api/auth/forgot-password"` | Endpoint API forgot password |
+| `signInUrl` | `string` | `"/login"` | Tautan kembali ke halaman login |
+| `title` | `string` | `"Reset Kata Sandi"` | Judul kartu UI |
+| `subtitle` | `string` | `"Masukkan email Anda..."` | Sub-judul kartu UI |
 
 ```tsx
-<SignUp
-  registerApiUrl="/api/auth/register"
+import { ForgotPassword } from "@mikulogin/nextjs";
+
+<ForgotPassword
+  theme="dark"
+  forgotPasswordApiUrl="/api/auth/forgot-password"
   signInUrl="/login"
-  title="Buat Akun Baru"
 />
 ```
 
 ---
 
-## Aplikasi Demo (`apps/demo`)
+## Komponen UI: `<ResetPassword />` ⭐ **Baru**
 
-Playground Next.js App Router untuk menguji komponen UI secara langsung.
+Komponen React Client (`"use client"`) untuk alur Reset Kata Sandi Baru.
 
-```bash
-# Jalankan demo app
-cd apps/demo
-npm run dev
-# Buka http://localhost:3000
+**Fitur:**
+- Membaca query parameter `token` secara otomatis dari URL (`window.location.search`).
+- Tampilan form kata sandi baru (minimal 8 karakter) dengan konfirmasi tombol.
+- Tampilan pesan sukses + tombol navigasi cepat ke halaman login setelah kata sandi berhasil diperbarui.
+
+### Props
+
+| Prop | Tipe | Default | Deskripsi |
+| :--- | :--- | :--- | :--- |
+| `theme` | `"light" \| "dark"` | `"light"` | Pilihan tema UI |
+| `resetPasswordApiUrl` | `string` | `"/api/auth/reset-password"` | Endpoint API reset password |
+| `signInUrl` | `string` | `"/login"` | Tautan ke halaman login setelah sukses |
+| `title` | `string` | `"Buat Kata Sandi Baru"` | Judul kartu UI |
+| `subtitle` | `string` | `"Masukkan kata sandi baru..."` | Sub-judul kartu UI |
+
+```tsx
+import { ResetPassword } from "@mikulogin/nextjs";
+
+<ResetPassword
+  theme="light"
+  resetPasswordApiUrl="/api/auth/reset-password"
+  signInUrl="/login"
+/>
 ```
-
-**Rute yang tersedia:**
-- `/login` — Halaman login menggunakan `<SignIn />`
-- `/register` — Halaman registrasi menggunakan `<SignUp />`
-- `/api/auth/login` — Route Handler login
-- `/api/auth/register` — Route Handler registrasi
 
 ---
 
 ## Penanganan Error (Anti Happy-Path)
 
-Semua handler dirancang untuk **tidak pernah crash**:
+Semua handler dan komponen dirancang untuk **tidak pernah crash**:
 
 | Skenario | Respons |
 | :--- | :--- |
 | Body JSON tidak valid / malformed | `400 { success: false, error: "Format JSON tidak valid" }` |
 | Email atau password salah | `401 { success: false, error: "Email atau password salah" }` |
 | Email sudah terdaftar | `400 { success: false, error: "Email sudah terdaftar" }` |
-| Database down / error | `500 { success: false, error: "Gagal memproses login: ..." }` |
-| Sesi tidak ditemukan / kedaluwarsa | `401 { success: false, session: null, user: null }` |
-| Token cookie tidak ada | `auth()` mengembalikan `null` (tidak throw) |
+| Token reset tidak ditemukan / expired | `400 { error: "Tautan reset tidak valid atau sudah kedaluwarsa" }` |
+| Database down / error | `500 { success: false, error: "Terjadi kesalahan server" }` |
+| Server 500 HTML Response di UI Component | Menampilkan alert ralat tanpa melempar unhandled promise rejection |
 
 ---
 
@@ -221,5 +238,5 @@ Semua handler dirancang untuk **tidak pernah crash**:
 
 - ✅ `passwordHash` **tidak pernah dikembalikan** ke client di semua endpoint
 - ✅ Cookie di-set dengan `HttpOnly`, `SameSite=Lax`, `Path=/`
-- ✅ Session token di-generate menggunakan `crypto.randomBytes(32)` (64 hex chars)
-- ✅ Semua error fallback mengembalikan pesan generik (bukan stack trace)
+- ✅ Session & Reset Token di-generate menggunakan `crypto.randomBytes(32)` / `crypto.randomUUID()`
+- ✅ Proteksi Anti User Enumeration pada endpoint `handleForgotPassword`
