@@ -55,4 +55,27 @@ export interface DatabaseAdapter {
    * @returns Objek berisi session dan user jika token valid, atau null jika tidak ditemukan/kadaluarsa.
    */
   getSessionAndUser(token: string): Promise<{ session: Session; user: User } | null>;
+
+  /**
+   * Membuat token reset password untuk pengguna.
+   * @param userId ID pengguna yang meminta reset password.
+   * @param token Token acak unik untuk reset password.
+   * @param expiresAt Waktu token akan kadaluarsa.
+   */
+  createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+
+  /**
+   * Mengonsumsi (validasi dan hapus/nonaktifkan) token reset password.
+   * @param token Token reset password yang diberikan oleh pengguna.
+   * @returns Objek berisi userId jika token valid dan berhasil dikonsumsi, atau null jika tidak valid/kadaluarsa.
+   */
+  consumePasswordResetToken(token: string): Promise<{ userId: string } | null>;
+
+  /**
+   * Perbarui kata sandi pengguna.
+   * @param userId ID pengguna.
+   * @param newPasswordHash Hash kata sandi baru.
+   */
+  updateUserPassword(userId: string, newPasswordHash: string): Promise<void>;
 }
+
