@@ -1,7 +1,15 @@
 import { expect, test } from "vitest";
-import { hashPassword, verifyPassword, generateSessionToken, PrismaAdapter } from "../src/index";
+import {
+  hashPassword,
+  verifyPassword,
+  generateSessionToken,
+  PrismaAdapter,
+  SignIn,
+  SignUp,
+  mikulogin,
+} from "../src/index";
 
-test("Paket Utama Mikulogin: Re-export fungsi core dan adapter", async () => {
+test("Paket Utama Mikulogin: Re-export fungsi core, adapter, handlers, dan komponen UI", async () => {
   // Test hash dan verifikasi
   const plain = "kataSandiUtama123";
   const hash = await hashPassword(plain);
@@ -14,6 +22,11 @@ test("Paket Utama Mikulogin: Re-export fungsi core dan adapter", async () => {
   const token = generateSessionToken();
   expect(token.length).toBe(64);
 
-  // Test fungsi adapter terdefinisi
+  // Test kelas adapter terdefinisi
   expect(typeof PrismaAdapter).toBe("function");
+
+  // Test handler dan komponen UI ter-export dari paket utama
+  expect(typeof mikulogin).toBe("function");
+  expect(typeof SignIn).toBe("function");
+  expect(typeof SignUp).toBe("function");
 });

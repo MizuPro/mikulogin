@@ -5,18 +5,23 @@
   "main": "packages/core/src/index.ts",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=@mikulogin/core && npm run build --workspace=@mikulogin/adapter-prisma && npm run build --workspace=mikulogin",
+    "build": "npm run build --workspace=@mikulogin/core && npm run build --workspace=@mikulogin/adapter-prisma && npm run build --workspace=@mikulogin/nextjs && npm run build --workspace=mikulogin",
     "test": "vitest run"
   },
   "devDependencies": {
     "@prisma/client": "6.3.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "bcryptjs": "^3.0.3",
     "prisma": "6.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
   },

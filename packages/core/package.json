@@ -1,6 +1,6 @@
 {
   "name": "@mikulogin/core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Komponen inti autentikasi Mikulogin yang menyediakan tipe antarmuka (interface) dan fungsi kriptografi dasar.",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

@@ -4,4 +4,6 @@ node_modules
 dist
 coverage
 .env
+.next
+apps/demo/.next
 packages/adapter-prisma/.env

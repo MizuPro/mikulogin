@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import crypto from "node:crypto";
+import crypto from "crypto";
 
 /**
  * Meng-hash password teks polos menggunakan algoritma bcrypt.
