@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import type { DatabaseAdapter, User, Session } from "../../core/src/types";
+import type { DatabaseAdapter, User, Session } from "@mikulogin/core";
 
 /**
  * PrismaAdapter mengimplementasikan antarmuka DatabaseAdapter menggunakan Prisma ORM.

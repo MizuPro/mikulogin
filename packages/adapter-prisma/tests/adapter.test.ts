@@ -1,6 +1,6 @@
 import { expect, test, beforeAll, afterAll } from "vitest";
 import { PrismaClient } from "@prisma/client";
-import { PrismaAdapter } from "../src/index";
+import { PrismaAdapter } from "@mikulogin/adapter-prisma";
 
 const prisma = new PrismaClient();
 const adapter = PrismaAdapter(prisma);

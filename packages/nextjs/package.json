@@ -1,0 +1,23 @@
+{
+  "name": "@mikulogin/nextjs",
+  "version": "1.0.0",
+  "description": "Integrasi Next.js untuk Mikulogin (fungsi pembantu server dan komponen antarmuka).",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@mikulogin/core": "*"
+  },
+  "keywords": [
+    "mikulogin",
+    "nextjs",
+    "auth"
+  ],
+  "license": "ISC"
+}

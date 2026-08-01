@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import type { User, Session, DatabaseAdapter } from "../src/types.js";
+import type { User, Session, DatabaseAdapter } from "@mikulogin/core";
 
 test("Tipe data User harus memiliki field wajib", () => {
   const user: User = {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { hashPassword, verifyPassword, generateSessionToken } from "../src/crypto.js";
+import { hashPassword, verifyPassword, generateSessionToken } from "@mikulogin/core";
 
 describe("Modul Core - Hashing dan Keamanan (crypto.ts)", () => {
   describe("hashPassword", () => {

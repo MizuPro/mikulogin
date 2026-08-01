@@ -4,6 +4,9 @@
   "description": "Framework autentikasi Next.js modular dengan arsitektur Bring Your Own Database (BYOD)",
   "main": "packages/core/src/index.ts",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "test": "vitest run"
   },

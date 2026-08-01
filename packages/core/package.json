@@ -1,0 +1,30 @@
+{
+  "name": "@mikulogin/core",
+  "version": "1.0.0",
+  "description": "Komponen inti autentikasi Mikulogin yang menyediakan tipe antarmuka (interface) dan fungsi kriptografi dasar.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "default": "./src/types.ts"
+    },
+    "./crypto": {
+      "types": "./src/crypto.ts",
+      "default": "./src/crypto.ts"
+    }
+  },
+  "keywords": [
+    "mikulogin",
+    "core",
+    "auth",
+    "types",
+    "crypto"
+  ],
+  "license": "ISC"
+}
