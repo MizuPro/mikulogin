@@ -130,6 +130,13 @@ describe("PrismaAdapter - Password Reset", () => {
     }
 
     try {
+      await badAdapter.consumePasswordResetToken("any_token");
+      expect(true).toBe(false);
+    } catch (error: any) {
+      expect(error.message).toContain("Gagal mengonsumsi token reset");
+    }
+
+    try {
       await badAdapter.updateUserPassword("any_id", "new_hash");
       expect(true).toBe(false);
     } catch (error: any) {

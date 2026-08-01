@@ -67,23 +67,20 @@ export function PrismaAdapter(prisma: PrismaClient): DatabaseAdapter {
     },
     async consumePasswordResetToken(token: string): Promise<{ userId: string } | null> {
       try {
-        const found = await prisma.passwordResetToken.findUnique({
-          where: { token },
-        });
-        
-        if (!found) return null;
-
-        await prisma.passwordResetToken.delete({
+        const deleted = await prisma.passwordResetToken.delete({
           where: { token },
         });
 
-        if (found.expiresAt < new Date()) {
+        if (deleted.expiresAt < new Date()) {
           return null;
         }
 
-        return { userId: found.userId };
-      } catch (error) {
-        return null;
+        return { userId: deleted.userId };
+      } catch (error: any) {
+        if (error?.code === "P2025") {
+          return null;
+        }
+        throw new Error(`Gagal mengonsumsi token reset: ${(error as Error).message}`);
       }
     },
     async updateUserPassword(userId: string, newPasswordHash: string): Promise<void> {
