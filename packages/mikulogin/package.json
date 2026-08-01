@@ -1,7 +1,7 @@
 {
   "name": "mikulogin",
   "version": "1.0.0",
-  "description": "Framework autentikasi Next.js modular dengan arsitektur Bring Your Own Database (BYOD). Paket utama yang mengekspor modul core dan adapter.",
+  "description": "Framework autentikasi Next.js modular dengan arsitektur Bring Your Own Database (BYOD). Paket utama yang mengekspor modul core, adapter, dan nextjs.",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "@mikulogin/core": "^1.0.0",
-    "@mikulogin/adapter-prisma": "^1.0.0"
+    "@mikulogin/adapter-prisma": "^1.0.0",
+    "@mikulogin/nextjs": "^1.0.0"
   },
   "scripts": {
     "build": "tsc"
