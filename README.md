@@ -6,97 +6,81 @@ Mikulogin memisahkan logika inti otentikasi (token & hashing) dari layer persist
 
 ---
 
-## 📦 Paket Monorepo
+## ⚡ Instalasi Cepat (Quick Install)
 
-| Paket | Nama Package | Fungsi |
-| :--- | :--- | :--- |
-| `packages/core` | `@mikulogin/core` | Tipe data inti (`User`, `Session`, `DatabaseAdapter`) & utilitas kriptografi |
-| `packages/adapter-prisma` | `@mikulogin/adapter-prisma` | Implementasi `DatabaseAdapter` untuk Prisma ORM (PostgreSQL) |
-| `packages/nextjs` | `@mikulogin/nextjs` | Helper & komponen Next.js *(Dalam Pengembangan)* |
-
----
-
-## ⚡ Instalasi
+Anda dapat langsung menginstal paket utama **`mikulogin`**:
 
 ```bash
-# Instalasi di dalam proyek Anda
+npm install mikulogin @prisma/client bcryptjs
+```
+
+Atau jika ingin menginstal paket modularnya secara terpisah:
+
+```bash
 npm install @mikulogin/core @mikulogin/adapter-prisma @prisma/client bcryptjs
 ```
 
 ---
 
+## 📦 Paket Monorepo Resmi di NPM
+
+| Paket | Nama Package di NPM | Fungsi | NPM Link |
+| :--- | :--- | :--- | :--- |
+| `packages/mikulogin` | **`mikulogin`** | Paket utama (Umbrella package) yang meng-ekspor ulang core & adapter | [![npm](https://img.shields.io/npm/v/mikulogin.svg)](https://www.npmjs.com/package/mikulogin) |
+| `packages/core` | **`@mikulogin/core`** | Tipe data inti (`User`, `Session`, `DatabaseAdapter`) & utilitas kriptografi | [![npm](https://img.shields.io/npm/v/@mikulogin/core.svg)](https://www.npmjs.com/package/@mikulogin/core) |
+| `packages/adapter-prisma` | **`@mikulogin/adapter-prisma`** | Implementasi `DatabaseAdapter` untuk Prisma ORM (PostgreSQL) | [![npm](https://img.shields.io/npm/v/@mikulogin/adapter-prisma.svg)](https://www.npmjs.com/package/@mikulogin/adapter-prisma) |
+| `packages/nextjs` | **`@mikulogin/nextjs`** | Helper & komponen Next.js *(Dalam Pengembangan)* | [![npm](https://img.shields.io/npm/v/@mikulogin/nextjs.svg)](https://www.npmjs.com/package/@mikulogin/nextjs) |
+
+---
+
 ## 🚀 Panduan Penggunaan (Quick Start)
 
-### 1. Inisialisasi Adapter
+Semua tipe dan fungsi dapat diimpor langsung dari paket **`mikulogin`**:
 
 ```typescript
-// lib/auth.ts
+import { 
+  hashPassword, 
+  verifyPassword, 
+  generateSessionToken, 
+  PrismaAdapter 
+} from "mikulogin";
 import { PrismaClient } from "@prisma/client";
-import { PrismaAdapter } from "@mikulogin/adapter-prisma";
 
+// 1. Inisialisasi Adapter Prisma
 const prisma = new PrismaClient();
-export const authAdapter = PrismaAdapter(prisma);
-```
+const authAdapter = PrismaAdapter(prisma);
 
-### 2. Registrasi & Hashing Password
-
-```typescript
-import { hashPassword } from "@mikulogin/core";
-import { authAdapter } from "./lib/auth";
-
+// 2. Registrasi Pengguna Baru
 async function handleRegister(email: string, plainPassword: string, name: string) {
-  // Hash password dengan bcrypt
   const passwordHash = await hashPassword(plainPassword);
-
-  // Simpan ke database via adapter
-  const user = await authAdapter.createUser({
-    email,
-    passwordHash,
-    name,
-  });
-
-  return user;
+  return await authAdapter.createUser({ email, passwordHash, name });
 }
-```
 
-### 3. Login & Pembuatan Token Sesi
-
-```typescript
-import { verifyPassword, generateSessionToken } from "@mikulogin/core";
-import { authAdapter } from "./lib/auth";
-
+// 3. Login Pengguna & Pembuatan Token Sesi
 async function handleLogin(email: string, plainPassword: string) {
   const user = await authAdapter.getUserByEmail(email);
   if (!user) throw new Error("Pengguna tidak ditemukan");
 
-  // Verifikasi kata sandi
   const isValid = await verifyPassword(plainPassword, user.passwordHash);
   if (!isValid) throw new Error("Kata sandi salah");
 
-  // Buat token sesi acak (64 karakter hex)
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24 jam
 
   const session = await authAdapter.createSession(user.id, token, expiresAt);
   return { token, session };
 }
-```
 
-### 4. Validasi Token Sesi
-
-```typescript
-import { authAdapter } from "./lib/auth";
-
+// 4. Validasi Token Sesi (Middleware / Request)
 async function validateSession(token: string) {
   const result = await authAdapter.getSessionAndUser(token);
   if (!result) return null;
 
-  const { session, user } = result;
-  if (new Date() > session.expiresAt) {
+  if (new Date() > result.session.expiresAt) {
     throw new Error("Sesi telah kedaluwarsa");
   }
 
-  return user;
+  return result.user;
 }
 ```
 

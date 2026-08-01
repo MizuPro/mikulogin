@@ -16,10 +16,11 @@ Berikut adalah daftar panduan dan dokumentasi fitur yang tersedia:
 
 ---
 
-## Struktur Monorepo
+## Struktur Monorepo & Paket NPM Live
 
 Proyek ini dibangun menggunakan struktur *npm workspaces*:
 
-- **`packages/core`** (`@mikulogin/core`): Modul inti yang independen dari ORM/database.
-- **`packages/adapter-prisma`** (`@mikulogin/adapter-prisma`): Adapter resmi untuk Prisma ORM dan PostgreSQL.
-- **`packages/nextjs`** (`@mikulogin/nextjs`): Komponen pembantu & middleware untuk aplikasi Next.js (*Stub / In-Progress*).
+- **`packages/mikulogin`** ([`mikulogin`](https://www.npmjs.com/package/mikulogin)): Paket utama (*Umbrella package*) yang re-export seluruh fitur core dan adapter sehingga bisa diinstal langsung dengan `npm install mikulogin`.
+- **`packages/core`** ([`@mikulogin/core`](https://www.npmjs.com/package/@mikulogin/core)): Modul inti yang independen dari ORM/database.
+- **`packages/adapter-prisma`** ([`@mikulogin/adapter-prisma`](https://www.npmjs.com/package/@mikulogin/adapter-prisma)): Adapter resmi untuk Prisma ORM dan PostgreSQL.
+- **`packages/nextjs`** ([`@mikulogin/nextjs`](https://www.npmjs.com/package/@mikulogin/nextjs)): Komponen pembantu & middleware untuk aplikasi Next.js (*Stub / In-Progress*).
