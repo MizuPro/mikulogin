@@ -1,4 +1,4 @@
-import { DatabaseAdapter, verifyPassword, hashPassword, generateSessionToken } from "@mikulogin/core";
+import { DatabaseAdapter, verifyPassword, hashPassword, generateSessionToken, User, Session } from "@mikulogin/core";
 
 export interface MikuloginConfig {
   adapter: DatabaseAdapter;
@@ -9,10 +9,37 @@ export interface MikuloginConfig {
 export function mikulogin(config: MikuloginConfig) {
   const maxAge = config.sessionMaxAge || 86400;
 
+  const auth = async (tokenOrCookieHeader?: string): Promise<{ user: User; session: Session } | null> => {
+    try {
+      if (!tokenOrCookieHeader) return null;
+      const match = tokenOrCookieHeader.match(/(?:^|;\s*)mikulogin_session=([^;]+)/);
+      const token = match ? match[1].trim() : tokenOrCookieHeader.trim();
+
+      if (!token) return null;
+
+      const result = await config.adapter.getSessionAndUser(token);
+      if (!result) return null;
+
+      if (new Date() > new Date(result.session.expiresAt)) {
+        return null;
+      }
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  };
+
   return {
     async handleLogin(req: Request): Promise<Response> {
       try {
-        const body = await req.json();
+        let body: any;
+        try {
+          body = await req.json();
+        } catch {
+          return Response.json({ success: false, error: "Format JSON tidak valid" }, { status: 400 });
+        }
+
         const { email, password } = body || {};
 
         if (!email || !password) {
@@ -47,7 +74,13 @@ export function mikulogin(config: MikuloginConfig) {
 
     async handleRegister(req: Request): Promise<Response> {
       try {
-        const body = await req.json();
+        let body: any;
+        try {
+          body = await req.json();
+        } catch {
+          return Response.json({ success: false, error: "Format JSON tidak valid" }, { status: 400 });
+        }
+
         const { email, password, name } = body || {};
 
         if (!email || !password) {
@@ -68,30 +101,19 @@ export function mikulogin(config: MikuloginConfig) {
       }
     },
 
-    async auth(tokenOrCookieHeader?: string): Promise<{ user: any; session: any } | null> {
+    async handleSession(req: Request): Promise<Response> {
       try {
-        if (!tokenOrCookieHeader) return null;
-        let token = tokenOrCookieHeader.trim();
-        if (token.includes("mikulogin_session=")) {
-          const parts = token.split("mikulogin_session=");
-          if (parts[1]) {
-            token = parts[1].split(";")[0].trim();
-          }
+        const cookieHeader = req.headers.get("cookie") || undefined;
+        const result = await auth(cookieHeader);
+        if (!result) {
+          return Response.json({ success: false, session: null, user: null }, { status: 401 });
         }
-
-        if (!token) return null;
-
-        const result = await config.adapter.getSessionAndUser(token);
-        if (!result) return null;
-
-        if (new Date() > new Date(result.session.expiresAt)) {
-          return null;
-        }
-
-        return result;
+        return Response.json({ success: true, user: result.user, session: result.session }, { status: 200 });
       } catch (error) {
-        return null;
+        return Response.json({ success: false, session: null, user: null }, { status: 401 });
       }
     },
+
+    auth,
   };
 }

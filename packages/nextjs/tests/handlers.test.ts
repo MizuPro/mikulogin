@@ -82,10 +82,28 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
     const authObj = mikulogin({ adapter, secret: "supersecret" });
     expect(typeof authObj.handleLogin).toBe("function");
     expect(typeof authObj.handleRegister).toBe("function");
+    expect(typeof authObj.handleSession).toBe("function");
     expect(typeof authObj.auth).toBe("function");
   });
 
   describe("handleLogin", () => {
+    test("mengembalikan error 400 jika format JSON malformed / tidak valid", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleLogin } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/login", {
+        method: "POST",
+        body: "{ invalid json format",
+        headers: { "Content-Type": "application/json" },
+      });
+      const res = await handleLogin(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toContain("Format JSON tidak valid");
+    });
+
     test("mengembalikan error 400 jika email atau password tidak diisi", async () => {
       const hashedPassword = await hashPassword("password123");
       const adapter = createMockAdapter(hashedPassword);
@@ -163,6 +181,23 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
   });
 
   describe("handleRegister", () => {
+    test("mengembalikan error 400 jika format JSON malformed / tidak valid", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleRegister } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/register", {
+        method: "POST",
+        body: "{ malformed json",
+        headers: { "Content-Type": "application/json" },
+      });
+      const res = await handleRegister(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error).toContain("Format JSON tidak valid");
+    });
+
     test("mengembalikan error 400 jika email atau password tidak diisi", async () => {
       const hashedPassword = await hashPassword("password123");
       const adapter = createMockAdapter(hashedPassword);
@@ -225,6 +260,52 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
     });
   });
 
+  describe("handleSession", () => {
+    test("mengembalikan 200 OK dengan user dan session jika cookie valid", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleSession } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/session", {
+        method: "GET",
+        headers: { Cookie: "mikulogin_session=valid_token" },
+      });
+      const res = await handleSession(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.user.email).toBe("test@example.com");
+      expect(data.session.token).toBe("valid_token");
+    });
+
+    test("mengembalikan 401 Unauthorized dengan session null jika cookie tidak valid atau tidak ada", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleSession } = mikulogin({ adapter, secret: "supersecret" });
+
+      const reqMissing = new Request("http://localhost/api/session", {
+        method: "GET",
+      });
+      const resMissing = await handleSession(reqMissing);
+      expect(resMissing.status).toBe(401);
+      const dataMissing = await resMissing.json();
+      expect(dataMissing.success).toBe(false);
+      expect(dataMissing.session).toBeNull();
+      expect(dataMissing.user).toBeNull();
+
+      const reqExpired = new Request("http://localhost/api/session", {
+        method: "GET",
+        headers: { Cookie: "mikulogin_session=expired_token" },
+      });
+      const resExpired = await handleSession(reqExpired);
+      expect(resExpired.status).toBe(401);
+      const dataExpired = await resExpired.json();
+      expect(dataExpired.success).toBe(false);
+      expect(dataExpired.session).toBeNull();
+      expect(dataExpired.user).toBeNull();
+    });
+  });
+
   describe("auth cookie helper", () => {
     test("mengembalikan null jika token atau header cookie kosong/invalid", async () => {
       const hashedPassword = await hashPassword("password123");
@@ -236,7 +317,7 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
       expect(await auth("invalid_token")).toBeNull();
     });
 
-    test("berhasil memverifikasi session dari string token maupun header cookie", async () => {
+    test("berhasil memverifikasi session dari string token maupun header cookie dengan regex presisi", async () => {
       const hashedPassword = await hashPassword("password123");
       const adapter = createMockAdapter(hashedPassword);
       const { auth } = mikulogin({ adapter, secret: "supersecret" });
@@ -246,11 +327,17 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
       expect(resultRaw).not.toBeNull();
       expect(resultRaw?.user.email).toBe("test@example.com");
 
-      // Verifikasi Cookie header
+      // Verifikasi Cookie header biasa
       const cookieHeader = "other_cookie=123; mikulogin_session=valid_token; foo=bar";
       const resultCookie = await auth(cookieHeader);
       expect(resultCookie).not.toBeNull();
       expect(resultCookie?.user.email).toBe("test@example.com");
+
+      // Verifikasi Cookie header dengan awalan yang menyerupai nama cookie lain
+      const trickCookieHeader = "other_mikulogin_session=invalid_token; mikulogin_session=valid_token; bar=baz";
+      const resultTrick = await auth(trickCookieHeader);
+      expect(resultTrick).not.toBeNull();
+      expect(resultTrick?.user.email).toBe("test@example.com");
     });
 
     test("mengembalikan null jika session sudah kadaluarsa (expired)", async () => {
