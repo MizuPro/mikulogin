@@ -40,7 +40,7 @@ export function mikulogin(config: MikuloginConfig) {
           return Response.json({ success: false, error: "Format JSON tidak valid" }, { status: 400 });
         }
 
-        const { email, password } = body || {};
+        const { email, password, rememberMe } = body || {};
 
         if (!email || !password) {
           return Response.json({ success: false, error: "Email dan password wajib diisi" }, { status: 400 });
@@ -56,14 +56,15 @@ export function mikulogin(config: MikuloginConfig) {
           return Response.json({ success: false, error: "Email atau password salah" }, { status: 401 });
         }
 
+        const effectiveMaxAge = rememberMe ? 2592000 : maxAge;
         const token = generateSessionToken();
-        const expiresAt = new Date(Date.now() + maxAge * 1000);
+        const expiresAt = new Date(Date.now() + effectiveMaxAge * 1000);
         await config.adapter.createSession(user.id, token, expiresAt);
 
         const response = Response.json({ success: true, user: { id: user.id, email: user.email, name: user.name } });
         response.headers.append(
           "Set-Cookie",
-          `mikulogin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`
+          `mikulogin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${effectiveMaxAge}`
         );
 
         return response;
@@ -108,7 +109,14 @@ export function mikulogin(config: MikuloginConfig) {
         if (!result) {
           return Response.json({ success: false, session: null, user: null }, { status: 401 });
         }
-        return Response.json({ success: true, user: result.user, session: result.session }, { status: 200 });
+        return Response.json(
+          {
+            success: true,
+            user: { id: result.user.id, email: result.user.email, name: result.user.name },
+            session: result.session,
+          },
+          { status: 200 }
+        );
       } catch (error) {
         return Response.json({ success: false, session: null, user: null }, { status: 401 });
       }

@@ -161,6 +161,26 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
       expect(setCookie).toBeTruthy();
       expect(setCookie).toContain("mikulogin_session=");
       expect(setCookie).toContain("HttpOnly");
+      expect(setCookie).toContain("Max-Age=86400");
+    });
+
+    test("berhasil login dengan opsi rememberMe=true dan mengeset Max-Age=2592000 (30 hari)", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleLogin } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "test@example.com", password: "password123", rememberMe: true }),
+      });
+      const res = await handleLogin(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+
+      const setCookie = res.headers.get("Set-Cookie");
+      expect(setCookie).toBeTruthy();
+      expect(setCookie).toContain("Max-Age=2592000");
     });
 
     test("menangani error internal/database secara eksplisit (500)", async () => {
@@ -261,7 +281,7 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
   });
 
   describe("handleSession", () => {
-    test("mengembalikan 200 OK dengan user dan session jika cookie valid", async () => {
+    test("mengembalikan 200 OK dengan user (tanpa passwordHash) dan session jika cookie valid", async () => {
       const hashedPassword = await hashPassword("password123");
       const adapter = createMockAdapter(hashedPassword);
       const { handleSession } = mikulogin({ adapter, secret: "supersecret" });
@@ -275,6 +295,7 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.user.email).toBe("test@example.com");
+      expect(data.user.passwordHash).toBeUndefined();
       expect(data.session.token).toBe("valid_token");
     });
 
