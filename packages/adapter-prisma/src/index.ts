@@ -55,6 +55,46 @@ export function PrismaAdapter(prisma: PrismaClient): DatabaseAdapter {
       } catch (error) {
         throw new Error(`Gagal memvalidasi sesi dari database: ${(error as Error).message}`);
       }
+    },
+    async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+      try {
+        await prisma.passwordResetToken.create({
+          data: { userId, token, expiresAt },
+        });
+      } catch (error) {
+        throw new Error(`Gagal membuat token reset: ${(error as Error).message}`);
+      }
+    },
+    async consumePasswordResetToken(token: string): Promise<{ userId: string } | null> {
+      try {
+        const found = await prisma.passwordResetToken.findUnique({
+          where: { token },
+        });
+        
+        if (!found) return null;
+
+        await prisma.passwordResetToken.delete({
+          where: { token },
+        });
+
+        if (found.expiresAt < new Date()) {
+          return null;
+        }
+
+        return { userId: found.userId };
+      } catch (error) {
+        return null;
+      }
+    },
+    async updateUserPassword(userId: string, newPasswordHash: string): Promise<void> {
+      try {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { passwordHash: newPasswordHash },
+        });
+      } catch (error) {
+        throw new Error(`Gagal memperbarui password: ${(error as Error).message}`);
+      }
     }
   };
 }
