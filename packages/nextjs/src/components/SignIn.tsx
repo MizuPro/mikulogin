@@ -5,6 +5,11 @@ import "./styles.css";
 
 export interface SignInProps {
   /**
+   * Tema komponen UI ("light" | "dark").
+   * Default: "light"
+   */
+  theme?: "light" | "dark";
+  /**
    * Endpoint URL untuk memproses login.
    * Default: "/api/auth/login"
    */
@@ -46,6 +51,7 @@ export interface SignInProps {
  * Mengikuti desain antarmuka modern Geist & Material Symbols.
  */
 export function SignIn({
+  theme = "light",
   loginApiUrl = "/api/auth/login",
   redirectTo = "/dashboard",
   signUpUrl = "/register",
@@ -99,8 +105,16 @@ export function SignIn({
     }
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty("--x", `${x}px`);
+    e.currentTarget.style.setProperty("--y", `${y}px`);
+  };
+
   return (
-    <div className="miku-root">
+    <div className={`miku-root ${theme === "dark" ? "miku-theme-dark" : ""}`}>
       <div className="miku-card">
         {/* Header */}
         <div className="miku-header">
@@ -168,11 +182,14 @@ export function SignIn({
             <label className="miku-remember">
               <input
                 type="checkbox"
-                className="miku-checkbox"
+                className="miku-checkbox-input"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 disabled={loading}
               />
+              <span className="miku-custom-checkbox" aria-hidden="true">
+                <span className="material-symbols-outlined miku-check-icon">check</span>
+              </span>
               <span>Remember me</span>
             </label>
 
@@ -184,7 +201,12 @@ export function SignIn({
           </div>
 
           {/* Action Submit */}
-          <button type="submit" className="miku-button" disabled={loading}>
+          <button 
+            type="submit" 
+            className="miku-button" 
+            disabled={loading}
+            onMouseMove={handleMouseMove}
+          >
             {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>

@@ -179,6 +179,7 @@ async function handleLogin(email: string, plainPassword: string) {
 
 | Prop | Tipe | Default | Deskripsi |
 | :--- | :--- | :--- | :--- |
+| `theme` | `"light" \| "dark"` | `"light"` | Tema UI (`light` atau `dark` OLED Pitch-Black) |
 | `loginApiUrl` | `string` | `"/api/auth/login"` | Endpoint API untuk proses login |
 | `redirectTo` | `string` | `"/dashboard"` | URL tujuan setelah berhasil login |
 | `signUpUrl` | `string` | `"/register"` | URL halaman pendaftaran |
@@ -192,6 +193,7 @@ async function handleLogin(email: string, plainPassword: string) {
 
 | Prop | Tipe | Default | Deskripsi |
 | :--- | :--- | :--- | :--- |
+| `theme` | `"light" \| "dark"` | `"light"` | Tema UI (`light` atau `dark` OLED Pitch-Black) |
 | `registerApiUrl` | `string` | `"/api/auth/register"` | Endpoint API untuk proses pendaftaran |
 | `signInUrl` | `string` | `"/login"` | URL halaman login |
 | `title` | `string` | `"Create Account"` | Judul halaman |

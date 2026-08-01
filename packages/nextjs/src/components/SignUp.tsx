@@ -5,6 +5,11 @@ import "./styles.css";
 
 export interface SignUpProps {
   /**
+   * Tema komponen UI ("light" | "dark").
+   * Default: "light"
+   */
+  theme?: "light" | "dark";
+  /**
    * Endpoint URL untuk memproses pendaftaran akun.
    * Default: "/api/auth/register"
    */
@@ -37,6 +42,7 @@ export interface SignUpProps {
  * Mengikuti desain antarmuka modern Geist & Material Symbols.
  */
 export function SignUp({
+  theme = "light",
   registerApiUrl = "/api/auth/register",
   signInUrl = "/login",
   title = "Create Account",
@@ -91,8 +97,16 @@ export function SignUp({
     }
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty("--x", `${x}px`);
+    e.currentTarget.style.setProperty("--y", `${y}px`);
+  };
+
   return (
-    <div className="miku-root">
+    <div className={`miku-root ${theme === "dark" ? "miku-theme-dark" : ""}`}>
       <div className="miku-card">
         {/* Header */}
         <div className="miku-header">
@@ -177,7 +191,12 @@ export function SignUp({
           </div>
 
           {/* Action Submit */}
-          <button type="submit" className="miku-button" disabled={loading}>
+          <button 
+            type="submit" 
+            className="miku-button" 
+            disabled={loading}
+            onMouseMove={handleMouseMove}
+          >
             {loading ? "Creating Account..." : "Create Account"}
           </button>
         </form>

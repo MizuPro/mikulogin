@@ -1,6 +1,6 @@
 {
   "name": "@mikulogin/nextjs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Integrasi Next.js untuk Mikulogin (fungsi pembantu server dan komponen antarmuka).",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

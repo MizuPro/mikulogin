@@ -115,10 +115,12 @@ const result = await auth(cookieHeader);
 Komponen React untuk halaman login dengan desain Geist + Material Symbols Outlined.
 
 **Fitur:**
+- **Pilihan Tema (`theme`)**: Mengdukung `light` mode dan `dark` (OLED Pitch-Black) mode.
+- **Spotlight Hover Effect**: Tombol submit dilengkapi dengan animasi pendaran cahaya (*glowing border beam & ambient aura*) yang melacak posisi kursor.
+- **Custom Animated Checkbox**: Checkbox berbentuk lingkaran dengan efek *spring pop animation* dan ikon centang dinamis.
+- **Sliding Gradient Underline**: Tautan teks ("Forgot password?", "Create Account") menggunakan animasi garis bawah meluncur dan efek pendaran cahaya teks (*text glow*).
 - Input email dan password dengan ikon Material Symbols
 - Toggle show/hide password (`visibility` / `visibility_off`)
-- Checkbox "Remember me" (perpanjang sesi ke 30 hari)
-- Link "Forgot password?"
 - Loading state (button & input di-disable)
 - Error state ditampilkan dengan alert merah
 - SSR-safe (`window.location` hanya diakses di client)
@@ -128,6 +130,7 @@ Komponen React untuk halaman login dengan desain Geist + Material Symbols Outlin
 
 | Prop | Tipe | Default | Deskripsi |
 | :--- | :--- | :--- | :--- |
+| `theme` | `"light" \| "dark"` | `"light"` | Pilihan tema UI (Light Mode atau Dark Mode) |
 | `loginApiUrl` | `string` | `"/api/auth/login"` | Endpoint API login |
 | `redirectTo` | `string` | `"/dashboard"` | Redirect setelah sukses |
 | `signUpUrl` | `string` | `"/register"` | URL halaman daftar |
@@ -162,6 +165,7 @@ Komponen React untuk halaman registrasi dengan desain yang seragam dengan `<Sign
 
 | Prop | Tipe | Default | Deskripsi |
 | :--- | :--- | :--- | :--- |
+| `theme` | `"light" \| "dark"` | `"light"` | Pilihan tema UI (Light Mode atau Dark Mode) |
 | `registerApiUrl` | `string` | `"/api/auth/register"` | Endpoint API registrasi |
 | `signInUrl` | `string` | `"/login"` | URL halaman login |
 | `title` | `string` | `"Create Account"` | Judul halaman |
