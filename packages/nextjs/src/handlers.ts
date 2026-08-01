@@ -4,6 +4,7 @@ export interface MikuloginConfig {
   adapter: DatabaseAdapter;
   secret: string;
   sessionMaxAge?: number; // default 24 jam (86400 detik)
+  sendPasswordResetEmail?: (email: string, resetUrl: string) => Promise<void>;
 }
 
 export function mikulogin(config: MikuloginConfig) {
@@ -119,6 +120,68 @@ export function mikulogin(config: MikuloginConfig) {
         );
       } catch (error) {
         return Response.json({ success: false, session: null, user: null }, { status: 401 });
+      }
+    },
+
+    async handleForgotPassword(req: Request): Promise<Response> {
+      try {
+        let body: any;
+        try {
+          body = await req.json();
+        } catch {
+          return Response.json({ error: "Format JSON tidak valid" }, { status: 400 });
+        }
+
+        const { email, resetUrlBase } = body || {};
+        if (!email || !resetUrlBase) {
+          return Response.json({ error: "Email dan resetUrlBase wajib diisi" }, { status: 400 });
+        }
+
+        const user = await config.adapter.getUserByEmail(email);
+        if (!user) {
+          return Response.json({ message: "Jika email valid, tautan reset telah dikirim." }, { status: 200 });
+        }
+
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 2);
+        await config.adapter.createPasswordResetToken(user.id, token, expiresAt);
+
+        if (config.sendPasswordResetEmail) {
+          const fullUrl = `${resetUrlBase}?token=${token}`;
+          await config.sendPasswordResetEmail(user.email, fullUrl);
+        }
+
+        return Response.json({ message: "Jika email valid, tautan reset telah dikirim." }, { status: 200 });
+      } catch (error) {
+        return Response.json({ error: "Terjadi kesalahan server" }, { status: 500 });
+      }
+    },
+
+    async handleResetPassword(req: Request): Promise<Response> {
+      try {
+        let body: any;
+        try {
+          body = await req.json();
+        } catch {
+          return Response.json({ error: "Format JSON tidak valid" }, { status: 400 });
+        }
+
+        const { token, newPassword } = body || {};
+        if (!token || !newPassword || newPassword.length < 8) {
+          return Response.json({ error: "Token tidak valid atau kata sandi terlalu pendek" }, { status: 400 });
+        }
+
+        const validToken = await config.adapter.consumePasswordResetToken(token);
+        if (!validToken) {
+          return Response.json({ error: "Tautan reset tidak valid atau sudah kedaluwarsa" }, { status: 400 });
+        }
+
+        const passwordHash = await hashPassword(newPassword);
+        await config.adapter.updateUserPassword(validToken.userId, passwordHash);
+
+        return Response.json({ message: "Kata sandi berhasil diperbarui" }, { status: 200 });
+      } catch (error) {
+        return Response.json({ error: "Terjadi kesalahan server" }, { status: 500 });
       }
     },
 

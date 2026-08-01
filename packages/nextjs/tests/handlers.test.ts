@@ -30,6 +30,19 @@ const createMockAdapter = (hashedPassword: string): DatabaseAdapter => {
     },
   ];
 
+  const resetTokens: Array<{ userId: string; token: string; expiresAt: Date }> = [
+    {
+      userId: "user_1",
+      token: "valid_reset_token",
+      expiresAt: new Date(Date.now() + 3600000),
+    },
+    {
+      userId: "user_1",
+      token: "expired_reset_token",
+      expiresAt: new Date(Date.now() - 3600000),
+    },
+  ];
+
   return {
     async getUserByEmail(email: string): Promise<User | null> {
       if (email === "error@example.com") {
@@ -72,6 +85,32 @@ const createMockAdapter = (hashedPassword: string): DatabaseAdapter => {
       if (!user) return null;
       return { session, user };
     },
+    async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+      if (userId === "error_user") {
+        throw new Error("Gagal membuat token reset di DB");
+      }
+      resetTokens.push({ userId, token, expiresAt });
+    },
+    async consumePasswordResetToken(token: string): Promise<{ userId: string } | null> {
+      if (token === "error_token") {
+        throw new Error("Gagal mengonsumsi token di DB");
+      }
+      const index = resetTokens.findIndex((t) => t.token === token);
+      if (index === -1) return null;
+      const found = resetTokens[index];
+      resetTokens.splice(index, 1);
+      if (found.expiresAt < new Date()) return null;
+      return { userId: found.userId };
+    },
+    async updateUserPassword(userId: string, newPasswordHash: string): Promise<void> {
+      if (userId === "error_update_pass") {
+        throw new Error("Gagal update password di DB");
+      }
+      const user = users.find((u) => u.id === userId);
+      if (user) {
+        user.passwordHash = newPasswordHash;
+      }
+    },
   };
 };
 
@@ -83,6 +122,8 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
     expect(typeof authObj.handleLogin).toBe("function");
     expect(typeof authObj.handleRegister).toBe("function");
     expect(typeof authObj.handleSession).toBe("function");
+    expect(typeof authObj.handleForgotPassword).toBe("function");
+    expect(typeof authObj.handleResetPassword).toBe("function");
     expect(typeof authObj.auth).toBe("function");
   });
 
@@ -377,6 +418,214 @@ describe("Mikulogin Next.js Server Route Handlers dan Cookie Session Helper", ()
 
       const result = await auth("error_token");
       expect(result).toBeNull();
+    });
+  });
+
+  describe("handleForgotPassword", () => {
+    test("mengembalikan error 400 jika format JSON malformed / tidak valid", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleForgotPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/forgot-password", {
+        method: "POST",
+        body: "{ malformed json",
+        headers: { "Content-Type": "application/json" },
+      });
+      const res = await handleForgotPassword(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Format JSON tidak valid");
+    });
+
+    test("mengembalikan error 400 jika email atau resetUrlBase tidak diisi", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleForgotPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req1 = new Request("http://localhost/api/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: "" }),
+      });
+      const res1 = await handleForgotPassword(req1);
+      expect(res1.status).toBe(400);
+      const data1 = await res1.json();
+      expect(data1.error).toContain("Email dan resetUrlBase wajib diisi");
+
+      const req2 = new Request("http://localhost/api/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: "test@example.com" }),
+      });
+      const res2 = await handleForgotPassword(req2);
+      expect(res2.status).toBe(400);
+      const data2 = await res2.json();
+      expect(data2.error).toContain("Email dan resetUrlBase wajib diisi");
+    });
+
+    test("mengembalikan status 200 dengan pesan aman jika email tidak ditemukan", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleForgotPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: "nonexistent@example.com", resetUrlBase: "http://localhost/reset" }),
+      });
+      const res = await handleForgotPassword(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.message).toContain("Jika email valid, tautan reset telah dikirim.");
+    });
+
+    test("berhasil membuat token reset dan memanggil callback sendPasswordResetEmail", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const sendEmailMock = vi.fn().mockResolvedValue(undefined);
+      const { handleForgotPassword } = mikulogin({
+        adapter,
+        secret: "supersecret",
+        sendPasswordResetEmail: sendEmailMock,
+      });
+
+      const req = new Request("http://localhost/api/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: "test@example.com", resetUrlBase: "http://localhost/reset" }),
+      });
+      const res = await handleForgotPassword(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.message).toContain("Jika email valid, tautan reset telah dikirim.");
+      expect(sendEmailMock).toHaveBeenCalledTimes(1);
+      expect(sendEmailMock.mock.calls[0][0]).toBe("test@example.com");
+      expect(sendEmailMock.mock.calls[0][1]).toContain("http://localhost/reset?token=");
+    });
+
+    test("menangani error internal/database secara eksplisit (500)", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleForgotPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: "error@example.com", resetUrlBase: "http://localhost/reset" }),
+      });
+      const res = await handleForgotPassword(req);
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.error).toContain("Terjadi kesalahan server");
+    });
+  });
+
+  describe("handleResetPassword", () => {
+    test("mengembalikan error 400 jika format JSON malformed / tidak valid", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleResetPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/reset-password", {
+        method: "POST",
+        body: "{ invalid json",
+        headers: { "Content-Type": "application/json" },
+      });
+      const res = await handleResetPassword(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Format JSON tidak valid");
+    });
+
+    test("mengembalikan error 400 jika token tidak ada atau password kurang dari 8 karakter", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleResetPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req1 = new Request("http://localhost/api/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: "", newPassword: "newpassword123" }),
+      });
+      const res1 = await handleResetPassword(req1);
+      expect(res1.status).toBe(400);
+      const data1 = await res1.json();
+      expect(data1.error).toContain("Token tidak valid atau kata sandi terlalu pendek");
+
+      const req2 = new Request("http://localhost/api/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: "valid_reset_token", newPassword: "short" }),
+      });
+      const res2 = await handleResetPassword(req2);
+      expect(res2.status).toBe(400);
+      const data2 = await res2.json();
+      expect(data2.error).toContain("Token tidak valid atau kata sandi terlalu pendek");
+    });
+
+    test("mengembalikan error 400 jika token reset tidak valid atau sudah kedaluwarsa", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleResetPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      // Token tidak terdaftar
+      const reqInvalid = new Request("http://localhost/api/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: "invalid_token_123", newPassword: "newpassword123" }),
+      });
+      const resInvalid = await handleResetPassword(reqInvalid);
+      expect(resInvalid.status).toBe(400);
+      const dataInvalid = await resInvalid.json();
+      expect(dataInvalid.error).toContain("Tautan reset tidak valid atau sudah kedaluwarsa");
+
+      // Token kedaluwarsa
+      const reqExpired = new Request("http://localhost/api/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: "expired_reset_token", newPassword: "newpassword123" }),
+      });
+      const resExpired = await handleResetPassword(reqExpired);
+      expect(resExpired.status).toBe(400);
+      const dataExpired = await resExpired.json();
+      expect(dataExpired.error).toContain("Tautan reset tidak valid atau sudah kedaluwarsa");
+    });
+
+    test("berhasil memperbarui kata sandi dengan token reset valid", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleResetPassword, handleLogin } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: "valid_reset_token", newPassword: "newpassword123" }),
+      });
+      const res = await handleResetPassword(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.message).toContain("Kata sandi berhasil diperbarui");
+
+      // Verifikasi bahwa password lama sudah tidak berlaku dan password baru berlaku
+      const reqOld = new Request("http://localhost/api/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "test@example.com", password: "password123" }),
+      });
+      const resOld = await handleLogin(reqOld);
+      expect(resOld.status).toBe(401);
+
+      const reqNew = new Request("http://localhost/api/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "test@example.com", password: "newpassword123" }),
+      });
+      const resNew = await handleLogin(reqNew);
+      expect(resNew.status).toBe(200);
+    });
+
+    test("menangani error internal/database secara eksplisit (500)", async () => {
+      const hashedPassword = await hashPassword("password123");
+      const adapter = createMockAdapter(hashedPassword);
+      const { handleResetPassword } = mikulogin({ adapter, secret: "supersecret" });
+
+      const req = new Request("http://localhost/api/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: "error_token", newPassword: "newpassword123" }),
+      });
+      const res = await handleResetPassword(req);
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.error).toContain("Terjadi kesalahan server");
     });
   });
 });
