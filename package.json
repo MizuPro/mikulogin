@@ -5,10 +5,11 @@
   "main": "packages/core/src/index.ts",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=@mikulogin/core && npm run build --workspace=@mikulogin/adapter-prisma && npm run build --workspace=mikulogin",
+    "build": "npm run build --workspace=@mikulogin/core && npm run build --workspace=@mikulogin/adapter-prisma && npm run build --workspace=@mikulogin/nextjs && npm run build --workspace=mikulogin",
     "test": "vitest run"
   },
   "devDependencies": {

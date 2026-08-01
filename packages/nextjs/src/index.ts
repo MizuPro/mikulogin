@@ -1,3 +1,4 @@
-export * from "./handlers";
-export * from "./components/SignIn";
-export * from "./components/SignUp";
+export * from "./handlers.js";
+export * from "./components/SignIn.js";
+export * from "./components/SignUp.js";
+

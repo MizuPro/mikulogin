@@ -1,81 +1,197 @@
-/* packages/nextjs/src/components/styles.css */
-.miku-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-  padding: 2.5rem;
-  max-width: 420px;
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+.miku-root {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #191c1d;
+  background-color: transparent;
   width: 100%;
+  max-width: 440px;
   margin: 0 auto;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   box-sizing: border-box;
 }
 
+.miku-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px 24px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e1e3e4;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.miku-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .miku-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  text-align: center;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #191c1d;
+  margin: 0;
 }
 
 .miku-subtitle {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-top: 0;
-  margin-bottom: 1.75rem;
-  text-align: center;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: #5f5e5e;
+  margin: 0;
+}
+
+.miku-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .miku-form-group {
-  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .miku-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.375rem;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #454652;
+}
+
+.miku-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid #c5c5d4;
+  border-radius: 8px;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.miku-input-wrapper:focus-within {
+  border-color: #24389c;
+  box-shadow: 0 0 0 2px rgba(36, 56, 156, 0.1);
+}
+
+.miku-input-icon {
+  position: absolute;
+  left: 16px;
+  color: #757684;
+  font-size: 20px;
+  user-select: none;
+  pointer-events: none;
+}
+
+.miku-input-wrapper:focus-within .miku-input-icon {
+  color: #24389c;
 }
 
 .miku-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  padding: 12px 16px 12px 48px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Geist', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  color: #191c1d;
   box-sizing: border-box;
 }
 
-.miku-input:focus {
-  outline: none;
-  border-color: #0284c7;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+.miku-input-has-toggle {
+  padding-right: 48px;
+}
+
+.miku-input::placeholder {
+  color: #757684;
+}
+
+.miku-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #757684;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.miku-toggle-btn:hover {
+  color: #191c1d;
+}
+
+.miku-utilities {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.miku-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #5f5e5e;
+}
+
+.miku-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #c5c5d4;
+  accent-color: #24389c;
+  cursor: pointer;
+}
+
+.miku-forgot-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: #24389c;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.miku-forgot-link:hover {
+  color: #1a2b7a;
+  text-decoration: underline;
 }
 
 .miku-button {
   width: 100%;
-  padding: 0.875rem;
+  background-color: #24389c;
+  color: #ffffff;
+  padding: 14px 24px;
   border-radius: 8px;
   border: none;
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  color: #ffffff;
+  font-family: 'Geist', sans-serif;
+  font-size: 14px;
   font-weight: 600;
-  font-size: 1rem;
+  line-height: 20px;
   cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  margin-top: 8px;
 }
 
 .miku-button:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
-  transform: translateY(-1px);
+  background-color: #1a2b7a;
+}
+
+.miku-button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .miku-button:disabled {
@@ -84,23 +200,58 @@
 }
 
 .miku-error {
-  background: #fef2f2;
-  color: #991b1b;
-  padding: 0.75rem;
+  background-color: #ffdad6;
+  color: #93000a;
+  padding: 12px 16px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  margin-bottom: 1rem;
-  border: 1px solid #fecaca;
+  font-size: 14px;
+  line-height: 20px;
+  border: 1px solid #ba1a1a;
   word-break: break-word;
 }
 
 .miku-success {
-  background: #f0fdf4;
+  background-color: #f0fdf4;
   color: #166534;
-  padding: 0.75rem;
+  padding: 12px 16px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  margin-bottom: 1rem;
+  font-size: 14px;
+  line-height: 20px;
   border: 1px solid #bbf7d0;
   word-break: break-word;
+}
+
+.miku-footer {
+  padding-top: 16px;
+  border-top: 1px solid #c5c5d4;
+  text-align: center;
+}
+
+.miku-footer-text {
+  font-size: 14px;
+  color: #5f5e5e;
+  margin: 0;
+}
+
+.miku-footer-link {
+  color: #24389c;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.miku-footer-link:hover {
+  text-decoration: underline;
+}
+
+.miku-branding {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.miku-branding-text {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #757684;
+  margin: 0;
 }

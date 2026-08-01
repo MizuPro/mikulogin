@@ -1,9 +1,11 @@
+"use client";
+
 import React, { useState } from "react";
 import "./styles.css";
 
 export interface SignUpProps {
   /**
-   * Endpoint URL untuk pendaftaran akun baru.
+   * Endpoint URL untuk memproses pendaftaran akun.
    * Default: "/api/auth/register"
    */
   registerApiUrl?: string;
@@ -13,22 +15,39 @@ export interface SignUpProps {
    */
   signInUrl?: string;
   /**
+   * Judul halaman. Default: "Create Account"
+   */
+  title?: string;
+  /**
+   * Sub-judul halaman.
+   */
+  subtitle?: string;
+  /**
+   * Teks protokol/branding footer.
+   */
+  protocolText?: string;
+  /**
    * Callback yang dipanggil setelah pendaftaran berhasil.
    */
   onSuccess?: (data: any) => void;
 }
 
 /**
- * Komponen UI React SignUp untuk registrasi akun baru Mikulogin.
+ * Komponen UI React SignUp untuk pendaftaran akun Mikulogin.
+ * Mengikuti desain antarmuka modern Geist & Material Symbols.
  */
 export function SignUp({
   registerApiUrl = "/api/auth/register",
   signInUrl = "/login",
+  title = "Create Account",
+  subtitle = "Fill in your details to create a new AuthPortal account.",
+  protocolText = "Mikulogin Security Protocol V2.4",
   onSuccess,
 }: SignUpProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -52,22 +71,19 @@ export function SignUp({
         const errorMsg =
           data?.error ||
           (res.status === 400
-            ? "Data pendaftaran tidak valid atau email sudah terdaftar"
-            : "Terjadi kesalahan saat membuat akun. Silakan coba lagi.");
+            ? "Gagal membuat akun. Pastikan data diisi dengan benar."
+            : "Terjadi kesalahan sistem saat membuat akun.");
         throw new Error(errorMsg);
       }
 
-      setSuccessMsg("Akun berhasil dibuat! Mengalihkan ke halaman login...");
+      setSuccessMsg("Akun berhasil dibuat! Mengalihkan ke halaman masuk...");
+      if (onSuccess) onSuccess(data);
 
-      if (onSuccess) {
-        onSuccess(data);
-      }
-
-      if (signInUrl && typeof window !== "undefined") {
-        setTimeout(() => {
+      setTimeout(() => {
+        if (signInUrl && typeof window !== "undefined") {
           window.location.href = signInUrl;
-        }, 1500);
-      }
+        }
+      }, 1500);
     } catch (err) {
       setError((err as Error).message || "Terjadi kesalahan yang tidak terduga.");
     } finally {
@@ -76,65 +92,114 @@ export function SignUp({
   };
 
   return (
-    <div className="miku-card">
-      <h2 className="miku-title">Daftar Akun Baru</h2>
-      <p className="miku-subtitle">Buat akun baru untuk mulai menggunakan sistem</p>
-
-      {error && <div className="miku-error">{error}</div>}
-      {successMsg && <div className="miku-success">{successMsg}</div>}
-
-      <form onSubmit={handleSubmit}>
-        <div className="miku-form-group">
-          <label className="miku-label">Nama Lengkap</label>
-          <input
-            type="text"
-            className="miku-input"
-            placeholder="Pengguna Uji"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            disabled={loading}
-          />
+    <div className="miku-root">
+      <div className="miku-card">
+        {/* Header */}
+        <div className="miku-header">
+          <h1 className="miku-title">{title}</h1>
+          <p className="miku-subtitle">{subtitle}</p>
         </div>
 
-        <div className="miku-form-group">
-          <label className="miku-label">Email</label>
-          <input
-            type="email"
-            className="miku-input"
-            placeholder="nama@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={loading}
-          />
+        {/* Alerts */}
+        {error && <div className="miku-error">{error}</div>}
+        {successMsg && <div className="miku-success">{successMsg}</div>}
+
+        {/* Form */}
+        <form className="miku-form" onSubmit={handleSubmit}>
+          {/* Full Name Field */}
+          <div className="miku-form-group">
+            <label className="miku-label" htmlFor="miku-name">
+              Full Name
+            </label>
+            <div className="miku-input-wrapper">
+              <span className="material-symbols-outlined miku-input-icon">person</span>
+              <input
+                id="miku-name"
+                type="text"
+                className="miku-input"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Email Field */}
+          <div className="miku-form-group">
+            <label className="miku-label" htmlFor="miku-signup-email">
+              Email Address
+            </label>
+            <div className="miku-input-wrapper">
+              <span className="material-symbols-outlined miku-input-icon">mail</span>
+              <input
+                id="miku-signup-email"
+                type="email"
+                className="miku-input"
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Password Field */}
+          <div className="miku-form-group">
+            <label className="miku-label" htmlFor="miku-signup-password">
+              Password
+            </label>
+            <div className="miku-input-wrapper">
+              <span className="material-symbols-outlined miku-input-icon">lock</span>
+              <input
+                id="miku-signup-password"
+                type={showPassword ? "text" : "password"}
+                className="miku-input miku-input-has-toggle"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+              <button
+                type="button"
+                className="miku-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <span className="material-symbols-outlined">
+                  {showPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Action Submit */}
+          <button type="submit" className="miku-button" disabled={loading}>
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
+        </form>
+
+        {/* Footer Note */}
+        {signInUrl && (
+          <div className="miku-footer">
+            <p className="miku-footer-text">
+              Already have an account?{" "}
+              <a href={signInUrl} className="miku-footer-link">
+                Sign In
+              </a>
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Branding / Security Protocol */}
+      {protocolText && (
+        <div className="miku-branding">
+          <p className="miku-branding-text">{protocolText}</p>
         </div>
-
-        <div className="miku-form-group">
-          <label className="miku-label">Kata Sandi</label>
-          <input
-            type="password"
-            className="miku-input"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={loading}
-          />
-        </div>
-
-        <button type="submit" className="miku-button" disabled={loading}>
-          {loading ? "Memproses..." : "Daftar"}
-        </button>
-      </form>
-
-      {signInUrl && (
-        <p className="miku-subtitle" style={{ marginTop: "1.5rem", marginBottom: 0 }}>
-          Sudah punya akun?{" "}
-          <a href={signInUrl} style={{ color: "#0284c7", fontWeight: 600, textDecoration: "none" }}>
-            Masuk di sini
-          </a>
-        </p>
       )}
     </div>
   );
