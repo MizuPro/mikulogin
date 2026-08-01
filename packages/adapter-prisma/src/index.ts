@@ -20,7 +20,13 @@ export function PrismaAdapter(prisma: PrismaClient): DatabaseAdapter {
     },
     async createUser(data: Omit<User, "id" | "createdAt">): Promise<User> {
       try {
-        const user = await prisma.user.create({ data });
+        const user = await prisma.user.create({
+          data: {
+            email: data.email,
+            passwordHash: data.passwordHash,
+            name: data.name,
+          },
+        });
         return user;
       } catch (error) {
         throw new Error(`Gagal membuat data pengguna baru: ${(error as Error).message}`);

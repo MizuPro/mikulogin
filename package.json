@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "npm run build --workspace=@mikulogin/core && npm run build --workspace=@mikulogin/adapter-prisma",
     "test": "vitest run"
   },
   "devDependencies": {
