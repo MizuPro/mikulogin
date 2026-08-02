@@ -1,6 +1,6 @@
 {
   "name": "mikulogin-package",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Framework autentikasi Next.js modular dengan arsitektur Bring Your Own Database (BYOD)",
   "main": "packages/core/src/index.ts",
   "type": "module",

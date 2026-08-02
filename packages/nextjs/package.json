@@ -1,6 +1,6 @@
 {
   "name": "@mikulogin/nextjs",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Integrasi Next.js untuk Mikulogin (fungsi pembantu server dan komponen antarmuka).",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -9,6 +9,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,7 +23,7 @@
     "build": "tsc && node -e \"const fs = require('fs'); fs.mkdirSync('dist/components', {recursive: true}); fs.copyFileSync('src/components/styles.css', 'dist/components/styles.css');\""
   },
   "dependencies": {
-    "@mikulogin/core": "*"
+    "@mikulogin/core": "^1.2.0"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
@@ -33,4 +36,3 @@
   ],
   "license": "ISC"
 }
-
